@@ -22,12 +22,15 @@ public class CheckoutService {
 
     private final DistanceCalculationService distanceService;
 
-    public CheckoutService(ProductRepository productRepository, OrderRepository orderRepository, DeliveryGuyRepository deliveryGuyRepository, UserRepository userRepository, DistanceCalculationService distanceService) {
+    private final WhatsAppService whatsAppService;
+
+    public CheckoutService(ProductRepository productRepository, OrderRepository orderRepository, DeliveryGuyRepository deliveryGuyRepository, UserRepository userRepository, DistanceCalculationService distanceService, WhatsAppService whatsAppService) {
         this.productRepository = productRepository;
         this.orderRepository = orderRepository;
         this.deliveryGuyRepository = deliveryGuyRepository;
         this.userRepository = userRepository;
         this.distanceService = distanceService;
+        this.whatsAppService = whatsAppService;
     }
 
     @Transactional
@@ -84,11 +87,20 @@ public class CheckoutService {
         nearestDeliveryGuy.setAvailable(false);
         deliveryGuyRepository.save(nearestDeliveryGuy);
 
+        // Send WhatsApp notification to delivery guy
+        whatsAppService.sendOrderToDeliveryGuy(
+                nearestDeliveryGuy,
+                order,
+                checkedItems,
+                request.getDeliveryLocation()
+        );
+
         DeliveryGuyResponse deliveryGuyResponse = new DeliveryGuyResponse(
                 nearestDeliveryGuy.getId(),
                 nearestDeliveryGuy.getName(),
                 nearestDeliveryGuy.getAge(),
                 nearestDeliveryGuy.getCar(),
+                nearestDeliveryGuy.getWhatsappNumber(),
                 nearestDeliveryGuy.getLocation(),
                 nearestDeliveryGuy.getAvailable(),
                 distance
