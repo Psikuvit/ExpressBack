@@ -37,6 +37,7 @@ public class DeliveryGuyService {
                     guy.getName(),
                     guy.getAge(),
                     guy.getCar(),
+                    guy.getWhatsappNumber(),
                     guy.getLocation(),
                     guy.getAvailable(),
                     distance

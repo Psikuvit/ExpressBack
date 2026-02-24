@@ -11,6 +11,7 @@ public class DeliveryGuyResponse {
     private String name;
     private Integer age;
     private String car;
+    private String whatsappNumber;
     private Location nearestLocation;
     private Boolean available;
     private Double distanceFromUser;

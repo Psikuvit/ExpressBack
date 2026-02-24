@@ -24,6 +24,9 @@ public class DeliveryGuy {
     @Column(nullable = false)
     private String car;
 
+    @Column(nullable = false)
+    private String whatsappNumber;
+
     @Embedded
     private Location location;
 
