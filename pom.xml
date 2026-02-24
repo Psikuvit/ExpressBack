@@ -84,6 +84,12 @@
             <artifactId>bucket4j-core</artifactId>
             <version>8.7.0</version>
         </dependency>
+        <!-- Twilio WhatsApp Integration -->
+        <dependency>
+            <groupId>com.twilio.sdk</groupId>
+            <artifactId>twilio</artifactId>
+            <version>10.0.0</version>
+        </dependency>
     </dependencies>
 
     <build>
