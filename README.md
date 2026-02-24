@@ -16,6 +16,7 @@ This API provides **5 complete endpoints** for building a delivery service appli
 
 - ✅ **JWT Authentication** with refresh tokens
 - ✅ **Automatic Delivery Assignment** to nearest available driver
+- ✅ **WhatsApp Notifications** - Instant order alerts to delivery guys via Twilio
 - ✅ **Smart Price Calculation** based on product size and distance
 - ✅ **Real-time Location Tracking** with Haversine distance calculation
 - ✅ **Mobile App Ready** - Works seamlessly with Expo/React Native
@@ -73,6 +74,8 @@ curl -X POST http://localhost:8080/api/auth/login \
 - **Spring Data JPA** - Database operations
 - **PostgreSQL** - Database
 - **JJWT 0.12.3** - JWT token management
+- **Twilio SDK 10.0.0** - WhatsApp integration
+- **Bucket4j 8.7.0** - Rate limiting
 - **Lombok** - Clean code
 - **Maven** - Build tool
 

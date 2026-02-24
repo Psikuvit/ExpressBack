@@ -6,10 +6,12 @@ A comprehensive delivery service API built with Spring Boot that handles authent
 
 - **JWT Authentication** with refresh tokens
 - **Order Checkout** with automatic delivery guy assignment
+- **WhatsApp Notifications** to delivery guys via Twilio API
 - **Price Calculation** based on product size and distance
 - **Delivery Guy Management** with nearest location tracking
 - **User Location** tracking from Expo or any mobile app
 - **Distance Calculation** using Haversine formula
+- **Rate Limiting** to prevent API abuse
 
 ## Technology Stack
 
@@ -19,6 +21,8 @@ A comprehensive delivery service API built with Spring Boot that handles authent
 - JPA/Hibernate
 - Lombok
 - Maven
+- Twilio SDK (WhatsApp Integration)
+- Bucket4j (Rate Limiting)
 
 ## Prerequisites
 
@@ -39,6 +43,16 @@ spring.datasource.url=jdbc:postgresql://localhost:5432/express_db
 spring.datasource.username=your_username
 spring.datasource.password=your_password
 ```
+
+3. Configure Twilio WhatsApp (Optional - for notifications):
+```properties
+# Get these from https://www.twilio.com/console
+twilio.account.sid=your_twilio_account_sid
+twilio.auth.token=your_twilio_auth_token
+twilio.whatsapp.from=whatsapp:+14155238886
+```
+
+**Note:** WhatsApp notifications are optional. If not configured, the system will still work but delivery guys won't receive WhatsApp notifications.
 
 ## Running the Application
 
@@ -230,6 +244,7 @@ Response:
     "name": "John Smith",
     "age": 28,
     "car": "Honda Civic",
+    "whatsappNumber": "+14155551001",
     "nearestLocation": {
       "latitude": 40.7128,
       "longitude": -74.0060,
@@ -243,6 +258,7 @@ Response:
     "name": "Maria Garcia",
     "age": 32,
     "car": "Toyota Corolla",
+    "whatsappNumber": "+14155551002",
     "nearestLocation": {
       "latitude": 40.7589,
       "longitude": -73.9851,
@@ -253,6 +269,8 @@ Response:
   }
 ]
 ```
+
+**Note:** When an order is placed, the assigned delivery guy automatically receives a WhatsApp notification with complete order details, delivery location, and a Google Maps link.
 
 ### 5. Location API (`/api/location`)
 

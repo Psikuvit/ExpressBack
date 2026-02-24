@@ -110,6 +110,7 @@
 │  │  │  5. Create order                                     │        │     │
 │  │  │  6. Assign delivery guy                              │        │     │
 │  │  │  7. Mark delivery guy as unavailable                 │        │     │
+│  │  │  8. Send WhatsApp notification to delivery guy       │        │     │
 │  │  └──────────────────────────────────────────────────────┘        │     │
 │  │  ┌──────────────────────────────────────────────────────┐        │     │
 │  │  │ calculatePrice()                                      │        │     │
@@ -140,6 +141,22 @@
 │  │  │  - Uses Haversine Formula                            │        │     │
 │  │  │  - Returns distance in kilometers                    │        │     │
 │  │  │  - Precision: GPS coordinates (lat/long)             │        │     │
+│  │  └──────────────────────────────────────────────────────┘        │     │
+│  └──────────────────────────────────────────────────────────────────┘     │
+│                                                                              │
+│  ┌──────────────────────────────────────────────────────────────────┐     │
+│  │                    WhatsAppService                                │     │
+│  │  ┌──────────────────────────────────────────────────────┐        │     │
+│  │  │ sendOrderToDeliveryGuy()                             │        │     │
+│  │  │  - Sends formatted order details via WhatsApp        │        │     │
+│  │  │  - Uses Twilio API                                   │        │     │
+│  │  │  - Includes: Order ID, items, price, distance        │        │     │
+│  │  │  - Google Maps link for delivery location            │        │     │
+│  │  └──────────────────────────────────────────────────────┘        │     │
+│  │  ┌──────────────────────────────────────────────────────┐        │     │
+│  │  │ sendMessage()                                         │        │     │
+│  │  │  - Sends custom WhatsApp messages                    │        │     │
+│  │  │  - Generic notification utility                      │        │     │
 │  │  └──────────────────────────────────────────────────────┘        │     │
 │  └──────────────────────────────────────────────────────────────────┘     │
 │                                                                              │
@@ -206,6 +223,7 @@
 │  │ - name (String)                                                   │     │
 │  │ - age (Integer)                                                   │     │
 │  │ - car (String)                                                    │     │
+│  │ - whatsappNumber (String) - with country code                    │     │
 │  │ - location (Location, Embedded)                                   │     │
 │  │ - available (Boolean)                                             │     │
 │  └──────────────────────────────────────────────────────────────────┘     │
@@ -460,11 +478,12 @@
 | **CheckoutController** | CheckoutService | Process checkout and price calculations |
 | **DeliveryGuyController** | DeliveryGuyService | Retrieve delivery guy information |
 | **LocationController** | LocationService | Manage user locations |
-| **CheckoutService** | ProductRepository, DeliveryGuyRepository, OrderRepository, DistanceCalculationService | Orchestrate checkout process |
+| **CheckoutService** | ProductRepository, DeliveryGuyRepository, OrderRepository, DistanceCalculationService, WhatsAppService | Orchestrate checkout process and notify delivery guys |
 | **RefreshTokenService** | RefreshTokenRepository, UserRepository | Manage refresh tokens |
 | **DeliveryGuyService** | DeliveryGuyRepository, DistanceCalculationService | Find and sort delivery guys |
 | **LocationService** | UserRepository | Update/retrieve user locations |
 | **DistanceCalculationService** | None (Pure calculation) | Calculate distances using Haversine |
+| **WhatsAppService** | Twilio API | Send WhatsApp notifications to delivery guys |
 | **JwtUtils** | None (Token operations) | Generate and validate JWT tokens |
 | **AuthTokenFilter** | JwtUtils, UserDetailsServiceImpl | Intercept and validate requests |
 | **UserDetailsServiceImpl** | UserRepository | Load user details for authentication |
@@ -710,6 +729,12 @@ Cascade Rules:
 │  │  ├─ PostgreSQL 15+ (Production)                         │   │
 │  │  ├─ Hibernate 6.x (ORM)                                 │   │
 │  │  └─ HikariCP (Connection pooling)                       │   │
+│  └─────────────────────────────────────────────────────────┘   │
+│                                                                   │
+│  ┌─────────────────────────────────────────────────────────┐   │
+│  │ Rate Limiting & Messaging                                │   │
+│  │  ├─ Bucket4j 8.7.0 (Rate limiting)                      │   │
+│  │  └─ Twilio SDK 10.0.0 (WhatsApp integration)            │   │
 │  └─────────────────────────────────────────────────────────┘   │
 │                                                                   │
 │  ┌─────────────────────────────────────────────────────────┐   │
@@ -1042,7 +1067,263 @@ Configuration:
 
 ---
 
-This architecture provides a complete view of the Express Delivery API system, showing all layers, components, data flows, rate limiting, and technical details.
+## WhatsApp Integration Architecture
+
+### Overview
+The Express Delivery API integrates with Twilio's WhatsApp Business API to send real-time order notifications to delivery personnel. This ensures immediate communication when orders are assigned.
+
+### Integration Flow
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│                    WhatsApp Notification Flow                       │
+└─────────────────────────────────────────────────────────────────────┘
+
+Customer Places Order
+         │
+         ▼
+┌──────────────────┐
+│ CheckoutService  │
+└────────┬─────────┘
+         │ 1. Process Order
+         │ 2. Assign Delivery Guy
+         │ 3. Save to Database
+         ▼
+┌──────────────────┐       ┌──────────────────┐       ┌──────────────┐
+│ WhatsAppService  │──────▶│  Twilio API      │──────▶│  WhatsApp    │
+└──────────────────┘       └──────────────────┘       └──────────────┘
+         │                          │                        │
+         │ Build Message            │ API Call              │ Deliver
+         │ Format Details           │ (HTTP POST)           │ Message
+         ▼                          ▼                        ▼
+   Order Details            Authentication         ┌─────────────────┐
+   - Order ID               - Account SID          │ Delivery Guy's  │
+   - Items List             - Auth Token           │ WhatsApp Device │
+   - Total Price            - From Number          └─────────────────┘
+   - Distance               - To Number
+   - Delivery Address       - Message Body
+   - Google Maps Link
+```
+
+### Configuration
+
+**Environment Variables (application.properties):**
+```properties
+# Twilio WhatsApp Configuration
+twilio.account.sid=${TWILIO_ACCOUNT_SID:your_account_sid}
+twilio.auth.token=${TWILIO_AUTH_TOKEN:your_auth_token}
+twilio.whatsapp.from=${TWILIO_WHATSAPP_FROM:whatsapp:+14155238886}
+```
+
+**Required Setup:**
+1. Twilio Account (twilio.com/whatsapp)
+2. WhatsApp Business API enabled
+3. Verified sender number
+4. Environment variables configured
+
+### Message Format
+
+**WhatsApp Message Template:**
+```
+🚗 *NEW DELIVERY ORDER* 🚗
+
+Hi [Delivery Guy Name]! 👋
+
+📦 *Order #[Order ID]*
+━━━━━━━━━━━━━━━━━━━━
+
+📋 *ORDER ITEMS:*
+• [Product Name] ([Size]) x[Quantity] - $[Price]
+• [Product Name] ([Size]) x[Quantity] - $[Price]
+
+💰 *Total Price:* $[Total]
+📏 *Distance:* [Distance] km
+
+📍 *DELIVERY LOCATION:*
+Address: [Full Address]
+Coordinates: [Latitude], [Longitude]
+🗺️ Google Maps: [Maps Link]
+
+━━━━━━━━━━━━━━━━━━━━
+⏰ Please confirm pickup and start delivery ASAP!
+Good luck! 🎉
+```
+
+### WhatsAppService Component
+
+```java
+@Service
+public class WhatsAppService {
+    // Dependencies
+    - Twilio SDK (initialized with credentials)
+    - Configuration properties
+    
+    // Methods
+    + sendOrderToDeliveryGuy(deliveryGuy, order, items, location)
+      └─ Formats and sends complete order details
+    
+    + sendMessage(phoneNumber, messageText)
+      └─ Generic message sending utility
+    
+    // Features
+    - Automatic initialization (@PostConstruct)
+    - Error handling (doesn't fail orders)
+    - Logging (success/failure tracking)
+    - Message formatting with emojis
+    - Google Maps integration
+}
+```
+
+### DeliveryGuy WhatsApp Integration
+
+**Database Schema Update:**
+```sql
+ALTER TABLE delivery_guys 
+ADD COLUMN whatsapp_number VARCHAR(20) NOT NULL;
+
+-- Example values with country codes
++14155551001  (USA)
++447911123456 (UK)
++971501234567 (UAE)
+```
+
+**Entity Model:**
+```java
+@Entity
+public class DeliveryGuy {
+    private String whatsappNumber;  // Format: +[country][number]
+    // ... other fields
+}
+```
+
+### Integration Points
+
+| Trigger Point | Service | Action |
+|---------------|---------|--------|
+| Order Created | CheckoutService | Calls WhatsAppService.sendOrderToDeliveryGuy() |
+| Order Assigned | CheckoutService | Sends WhatsApp notification immediately |
+| Database Saved | After persist | Ensures order is committed before notification |
+| Delivery Guy Selected | findNearestDeliveryGuy() | Uses whatsappNumber from selected delivery guy |
+
+### Error Handling
+
+```
+WhatsApp Notification Flow:
+┌─────────────────────┐
+│ Send Notification   │
+└──────────┬──────────┘
+           │
+     Try to send
+           │
+           ├─────Success────▶ Log: "Message sent - SID: [MessageSID]"
+           │                  Continue with order flow
+           │
+           └─────Failure────▶ Log: "Failed to send: [Error]"
+                              Order still completes successfully
+                              (WhatsApp is non-critical)
+```
+
+**Failure Scenarios:**
+- Invalid phone number → Logged, order continues
+- Twilio API down → Logged, order continues
+- Network timeout → Logged, order continues
+- Invalid credentials → Logged at startup, all messages fail gracefully
+
+### Benefits
+
+✅ **Real-time Communication**
+   - Instant notification to delivery personnel
+   - No manual checking required
+   
+✅ **Complete Information**
+   - All order details in one message
+   - Direct Google Maps link
+   - Customer location coordinates
+
+✅ **Professional Format**
+   - Structured, easy-to-read messages
+   - Emojis for visual clarity
+   - Breakdown of items and prices
+
+✅ **Non-blocking**
+   - WhatsApp failures don't affect orders
+   - Asynchronous messaging
+   - Error logging for monitoring
+
+✅ **Scalable**
+   - Twilio handles message queue
+   - Supports international numbers
+   - Rate limiting handled by Twilio
+
+### Sample Delivery Guy Data
+
+```java
+DeliveryGuy {
+    id: 1,
+    name: "John Smith",
+    age: 28,
+    car: "Honda Civic",
+    whatsappNumber: "+14155551001",
+    location: {
+        latitude: 40.7128,
+        longitude: -74.0060,
+        address: "New York, NY"
+    },
+    available: true
+}
+```
+
+### API Response Update
+
+**GET /api/deliveryguys** now includes:
+```json
+{
+  "id": 1,
+  "name": "John Smith",
+  "age": 28,
+  "car": "Honda Civic",
+  "whatsappNumber": "+14155551001",
+  "nearestLocation": {
+    "latitude": 40.7128,
+    "longitude": -74.0060,
+    "address": "New York, NY"
+  },
+  "available": true,
+  "distanceFromUser": 5.2
+}
+```
+
+### Security Considerations
+
+🔒 **Credentials Protection**
+   - Stored in environment variables
+   - Not committed to version control
+   - Separate credentials for dev/prod
+
+🔒 **Phone Number Validation**
+   - Must include country code
+   - Format: +[country code][number]
+   - Validated by Twilio
+
+🔒 **Rate Limiting**
+   - Twilio enforces API rate limits
+   - Express API rate limiting protects checkout endpoint
+   - Prevents abuse
+
+### Dependencies
+
+```xml
+<!-- Twilio WhatsApp Integration -->
+<dependency>
+    <groupId>com.twilio.sdk</groupId>
+    <artifactId>twilio</artifactId>
+    <version>10.0.0</version>
+</dependency>
+```
+
+---
+
+This architecture provides a complete view of the Express Delivery API system, showing all layers, components, data flows, rate limiting, WhatsApp integration, and technical details.
 
 
 
