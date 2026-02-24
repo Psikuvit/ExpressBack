@@ -85,6 +85,7 @@ public class DataInitializer implements CommandLineRunner {
             dg1.setName("John Smith");
             dg1.setAge(28);
             dg1.setCar("Honda Civic");
+            dg1.setWhatsappNumber("+14155551001");
             dg1.setLocation(new Location(40.7128, -74.0060, "New York, NY"));
             dg1.setAvailable(true);
 
@@ -92,6 +93,7 @@ public class DataInitializer implements CommandLineRunner {
             dg2.setName("Maria Garcia");
             dg2.setAge(32);
             dg2.setCar("Toyota Corolla");
+            dg2.setWhatsappNumber("+14155551002");
             dg2.setLocation(new Location(40.7589, -73.9851, "Times Square, NY"));
             dg2.setAvailable(true);
 
@@ -99,6 +101,7 @@ public class DataInitializer implements CommandLineRunner {
             dg3.setName("Ahmed Hassan");
             dg3.setAge(25);
             dg3.setCar("Ford Focus");
+            dg3.setWhatsappNumber("+14155551003");
             dg3.setLocation(new Location(40.7614, -73.9776, "Central Park, NY"));
             dg3.setAvailable(true);
 
@@ -106,6 +109,7 @@ public class DataInitializer implements CommandLineRunner {
             dg4.setName("Lisa Chen");
             dg4.setAge(30);
             dg4.setCar("Mazda 3");
+            dg4.setWhatsappNumber("+14155551004");
             dg4.setLocation(new Location(40.7480, -73.9862, "Empire State Building, NY"));
             dg4.setAvailable(true);
 
