@@ -15,7 +15,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
-import org.springframework.security.web.authentication.www.BasicAuthenticationFilter;
+import org.springframework.security.web.context.SecurityContextHolderFilter;
 import org.springframework.web.cors.CorsConfigurationSource;
 
 import java.util.Arrays;
@@ -68,8 +68,9 @@ public class SecurityConfig {
                 );
 
         http.authenticationProvider(authenticationProvider());
-        http.addFilterBefore(appAccessFilter, RateLimitFilter.class);
-        http.addFilterBefore(rateLimitFilter, BasicAuthenticationFilter.class);
+        // Order: AppAccess -> RateLimit -> JWT Auth
+        http.addFilterAfter(appAccessFilter, SecurityContextHolderFilter.class);
+        http.addFilterAfter(rateLimitFilter, AppAccessFilter.class);
         http.addFilterBefore(authTokenFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
