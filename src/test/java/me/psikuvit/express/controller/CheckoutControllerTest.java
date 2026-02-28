@@ -7,7 +7,6 @@ import me.psikuvit.express.dto.PriceCalculationRequest;
 import me.psikuvit.express.dto.PriceCalculationResponse;
 import me.psikuvit.express.model.Location;
 import me.psikuvit.express.service.CheckoutService;
-import me.psikuvit.express.service.PriceCalculationService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
