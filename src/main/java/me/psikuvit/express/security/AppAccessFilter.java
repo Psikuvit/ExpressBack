@@ -42,20 +42,27 @@ public class AppAccessFilter extends OncePerRequestFilter {
             return;
         }
 
-        String origin = request.getHeader("Origin");
-        if (origin != null && !origin.isBlank()) {
-            if (allowedOrigins.isEmpty() || !allowedOrigins.contains(origin)) {
-                reject(response, "Origin is not allowed.");
+        // First, enforce app token if enabled (this applies to all requests)
+        if (enforceAppToken) {
+            String headerToken = request.getHeader("X-App-Token");
+            if (appToken == null || appToken.isBlank() || !appToken.equals(headerToken)) {
+                reject(response, "Missing or invalid app token. Provide valid X-App-Token header.");
                 return;
             }
+        }
+
+        String origin = request.getHeader("Origin");
+
+        // If allowed origins contains "*", allow all origins (all clients with different IPs)
+        if (!allowedOrigins.isEmpty() && allowedOrigins.contains("*")) {
             filterChain.doFilter(request, response);
             return;
         }
 
-        if (enforceAppToken) {
-            String headerToken = request.getHeader("X-App-Token");
-            if (appToken == null || appToken.isBlank() || !appToken.equals(headerToken)) {
-                reject(response, "Missing or invalid app token.");
+        // If specific origins are configured, validate them
+        if (origin != null && !origin.isBlank()) {
+            if (!allowedOrigins.isEmpty() && !allowedOrigins.contains(origin)) {
+                reject(response, "Origin is not allowed.");
                 return;
             }
         }
