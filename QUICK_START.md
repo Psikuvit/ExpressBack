@@ -1,7 +1,7 @@
 # Express Delivery API - Quick Start Guide
 
 ## Overview
-You've successfully created a comprehensive delivery service API with 5 main endpoints:
+You've successfully created a comprehensive delivery service API with 6 main endpoint groups:
 
 ### API Endpoints Summary:
 
@@ -11,16 +11,22 @@ You've successfully created a comprehensive delivery service API with 5 main end
    - POST /api/auth/refresh - Refresh expired token
    - POST /api/auth/logout - Logout user
 
-2. **`/api/checkout`** - Order checkout with automatic delivery assignment
-   - POST /api/checkout - Create order, validate products, assign nearest delivery guy
+2. **`/api/checkout`** - Order checkout with delivery assignment
+   - POST /api/checkout - Create order, validate products, set to PENDING
 
 3. **`/api/checkout/calc`** - Price calculation without creating order
    - POST /api/checkout/calc - Calculate total price based on products, size, and distance
 
-4. **`/api/deliveryguys`** - Get all delivery guys with locations
+4. **`/api/delivery`** ⭐ **NEW** - Delivery guy registration and order management
+   - POST /api/delivery/register - Register as delivery guy (age, car, whatsapp)
+   - GET /api/delivery/me - Get delivery guy profile
+   - GET /api/delivery/orders - Get pending orders (ROLE_DELIVERY required)
+   - POST /api/delivery/orders/{id}/accept - Accept and claim order (ROLE_DELIVERY required)
+
+5. **`/api/deliveryguys`** - Get all delivery guys with locations
    - GET /api/deliveryguys - Returns all delivery guys sorted by distance (if location provided)
 
-5. **`/api/location`** - User location management (for Expo/mobile apps)
+6. **`/api/location`** - User location management (for Expo/mobile apps)
    - POST /api/location - Update user location from mobile app
    - GET /api/location - Get current user location
 
@@ -118,6 +124,30 @@ curl -X POST http://localhost:8080/api/checkout \
   }'
 ```
 
+**Step 6: Register as Delivery Guy (new user in delivery role)**
+```bash
+curl -X POST http://localhost:8080/api/delivery/register \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_DELIVERY_USER_JWT_TOKEN" \
+  -d '{
+    "age": 28,
+    "car": "Honda Civic",
+    "whatsappNumber": "+1234567890"
+  }'
+```
+
+**Step 7: Get Available Orders (as delivery guy)**
+```bash
+curl -X GET http://localhost:8080/api/delivery/orders \
+  -H "Authorization: Bearer YOUR_DELIVERY_USER_JWT_TOKEN"
+```
+
+**Step 8: Accept an Order (as delivery guy)**
+```bash
+curl -X POST http://localhost:8080/api/delivery/orders/1/accept \
+  -H "Authorization: Bearer YOUR_DELIVERY_USER_JWT_TOKEN"
+```
+
 ## Sample Data Created Automatically
 
 **Test User:**
@@ -140,9 +170,12 @@ curl -X POST http://localhost:8080/api/checkout \
 ## Features Implemented
 
 ✅ JWT Authentication with refresh tokens
+✅ Role-Based Access Control (ROLE_USER, ROLE_DELIVERY)
+✅ **NEW: Delivery Guy Registration System** - Users can register as delivery personnel
+✅ **NEW: Order Queue Management** - Orders created as PENDING and claimed by delivery guys
+✅ **NEW: Order Acceptance Workflow** - Delivery guys claim orders and receive WhatsApp notifications
 ✅ Session management
 ✅ Product validation and availability checks
-✅ Automatic nearest delivery guy assignment
 ✅ Distance calculation using Haversine formula
 ✅ Dynamic price calculation based on:
    - Product base price
@@ -152,6 +185,7 @@ curl -X POST http://localhost:8080/api/checkout \
 ✅ CORS enabled for cross-origin requests
 ✅ PostgreSQL database with JPA
 ✅ Comprehensive error handling
+✅ WhatsApp integration via Twilio
 
 ## Mobile App Integration (Expo Example)
 

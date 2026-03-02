@@ -4,11 +4,13 @@ A comprehensive delivery service API built with Spring Boot that handles authent
 
 ## Features
 
-- **JWT Authentication** with refresh tokens
-- **Order Checkout** with automatic delivery guy assignment
-- **WhatsApp Notifications** to delivery guys via Twilio API
+- **JWT Authentication** with refresh tokens and role-based access control
+- **Delivery Guy Registration** - Users can register as delivery personnel
+- **Order Queue System** - Orders created as PENDING and claimed by delivery guys
+- **Order Acceptance Workflow** - Delivery guys accept orders with WhatsApp notifications
+- **WhatsApp Notifications** to delivery guys via Twilio API when orders are accepted
 - **Price Calculation** based on product size and distance
-- **Delivery Guy Management** with nearest location tracking
+- **Delivery Guy Management** with location tracking and availability status
 - **User Location** tracking from Expo or any mobile app
 - **Distance Calculation** using Haversine formula
 - **Rate Limiting** to prevent API abuse
@@ -227,7 +229,135 @@ Response:
   - BIG: $5.00 per item
 - Distance Fee: $0.50 per kilometer
 
-### 4. Delivery Guys API (`/api/deliveryguys`)
+### 4. Delivery API (`/api/delivery`) ⭐ NEW
+
+#### Register as Delivery Guy
+```http
+POST /api/delivery/register
+Authorization: Bearer <your_jwt_token>
+Content-Type: application/json
+
+{
+  "age": 28,
+  "car": "Honda Civic 2020",
+  "whatsappNumber": "+14155551001"
+}
+```
+
+Response:
+```json
+{
+  "id": 1,
+  "name": "john_doe",
+  "age": 28,
+  "car": "Honda Civic 2020",
+  "whatsappNumber": "+14155551001",
+  "location": {
+    "latitude": 40.7128,
+    "longitude": -74.0060,
+    "address": "New York, NY"
+  },
+  "available": true,
+  "registered": true
+}
+```
+
+**Requirements:**
+- Must be authenticated user
+- Age must be at least 18 years old
+- Returns 409 if user already registered as delivery guy
+
+#### Get Delivery Guy Profile
+```http
+GET /api/delivery/me
+Authorization: Bearer <your_jwt_token>
+```
+
+Response (if registered):
+```json
+{
+  "id": 1,
+  "name": "john_doe",
+  "age": 28,
+  "car": "Honda Civic 2020",
+  "whatsappNumber": "+14155551001",
+  "location": {...},
+  "available": true,
+  "registered": true
+}
+```
+
+Response (if not registered):
+```json
+{
+  "registered": false
+}
+```
+
+#### Get Available Orders (PENDING)
+```http
+GET /api/delivery/orders
+Authorization: Bearer <your_jwt_token>
+```
+
+**Requirements:** Must have ROLE_DELIVERY (registered as delivery guy)
+
+Response:
+```json
+[
+  {
+    "orderId": 1,
+    "customerName": "jane_customer",
+    "items": [
+      {
+        "productName": "Pizza Margherita",
+        "size": "MEDIUM",
+        "quantity": 2,
+        "price": 25.98
+      }
+    ],
+    "totalPrice": 35.50,
+    "distance": 3.2,
+    "deliveryLocation": {
+      "latitude": 40.7580,
+      "longitude": -73.9855,
+      "address": "456 Park Ave, New York, NY"
+    },
+    "status": "PENDING",
+    "createdAt": "2026-03-02T20:30:00"
+  }
+]
+```
+
+#### Accept an Order
+```http
+POST /api/delivery/orders/1/accept
+Authorization: Bearer <your_jwt_token>
+```
+
+**Requirements:** Must have ROLE_DELIVERY (registered as delivery guy)
+
+Response:
+```json
+{
+  "orderId": 1,
+  "customerName": "jane_customer",
+  "items": [...],
+  "totalPrice": 35.50,
+  "distance": 3.2,
+  "deliveryLocation": {...},
+  "status": "ASSIGNED",
+  "createdAt": "2026-03-02T20:30:00"
+}
+```
+
+**Side Effects:**
+- Order status changes from PENDING to ASSIGNED
+- Delivery guy is linked to order
+- Delivery guy availability set to false
+- WhatsApp notification sent to delivery guy with order details
+
+### 5. Delivery Guys API (`/api/deliveryguys`)
 
 Returns all delivery guys with their information and distance from user (if location provided).
 
@@ -272,7 +402,7 @@ Response:
 
 **Note:** When an order is placed, the assigned delivery guy automatically receives a WhatsApp notification with complete order details, delivery location, and a Google Maps link.
 
-### 5. Location API (`/api/location`)
+### 6. Location API (`/api/location`)
 
 #### Update User Location (from Expo/Mobile App)
 ```http
@@ -392,4 +522,3 @@ All endpoints return appropriate HTTP status codes:
 ## License
 
 This project is open source and available under the MIT License.
-

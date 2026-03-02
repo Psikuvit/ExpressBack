@@ -134,6 +134,29 @@ Sample delivery guys created!
 Test user created! Username: testuser, Password: password123
 ```
 
+### Test the Delivery Guy Features
+
+After login, you can register as a delivery guy:
+
+```bash
+# Get JWT token
+JWT_TOKEN=$(your_token_here)
+
+# Register as delivery guy
+curl -X POST http://localhost:8080/api/delivery/register \
+  -H "Authorization: Bearer $JWT_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "age": 28,
+    "car": "Honda Civic",
+    "whatsappNumber": "+1234567890"
+  }'
+
+# Get pending orders
+curl -X GET http://localhost:8080/api/delivery/orders \
+  -H "Authorization: Bearer $JWT_TOKEN"
+```
+
 ## Test the API
 
 ### Quick Health Check

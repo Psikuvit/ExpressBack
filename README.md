@@ -4,18 +4,20 @@ A comprehensive Spring Boot-based delivery service API with JWT authentication, 
 
 ## 🎯 Quick Overview
 
-This API provides **5 complete endpoints** for building a delivery service application:
+This API provides **6 complete endpoint groups** for building a delivery service application:
 
 1. **`/api/auth`** - Full authentication system with JWT and refresh tokens
-2. **`/api/checkout`** - Smart checkout with automatic delivery guy assignment
+2. **`/api/checkout`** - Smart checkout with delivery guy assignment
 3. **`/api/checkout/calc`** - Price calculation based on size and distance
-4. **`/api/deliveryguys`** - Get all delivery personnel with location tracking
-5. **`/api/location`** - User location updates (Expo/React Native compatible)
+4. **`/api/delivery`** - ⭐ NEW - Delivery guy registration & order management
+5. **`/api/deliveryguys`** - Get all delivery personnel with location tracking
+6. **`/api/location`** - User location updates (Expo/React Native compatible)
 
 ## ✨ Key Features
 
 - ✅ **JWT Authentication** with refresh tokens
-- ✅ **Automatic Delivery Assignment** to nearest available driver
+- ✅ **Delivery Guy Registration** - Users can register as delivery personnel
+- ✅ **Smart Order Assignment** - Delivery guys claim orders from queue
 - ✅ **WhatsApp Notifications** - Instant order alerts to delivery guys via Twilio
 - ✅ **Smart Price Calculation** based on product size and distance
 - ✅ **Real-time Location Tracking** with Haversine distance calculation
@@ -23,6 +25,7 @@ This API provides **5 complete endpoints** for building a delivery service appli
 - ✅ **Complete CRUD Operations** for orders, products, and delivery guys
 - ✅ **Sample Data Included** - Ready to test immediately
 - ✅ **Rate Limiting** - Prevents abuse and brute force attacks
+- ✅ **Role-Based Access Control** - ROLE_USER and ROLE_DELIVERY
 
 ## 🚀 Quick Start
 
@@ -143,7 +146,11 @@ The application automatically creates:
 | `/api/auth/logout` | POST | Logout user | Yes |
 | `/api/checkout` | POST | Create order | Yes |
 | `/api/checkout/calc` | POST | Calculate price | Yes |
-| `/api/deliveryguys` | GET | Get delivery guys | Yes |
+| `/api/delivery/register` | POST | Register as delivery guy | Yes |
+| `/api/delivery/me` | GET | Get delivery profile | Yes |
+| `/api/delivery/orders` | GET | Get pending orders (DELIVERY) | Yes |
+| `/api/delivery/orders/{id}/accept` | POST | Accept order (DELIVERY) | Yes |
+| `/api/deliveryguys` | GET | Get delivery guys | No |
 | `/api/location` | POST/GET | Update/Get location | Yes |
 
 ## 💡 Example Requests
@@ -184,7 +191,7 @@ Authorization: Bearer {token}
 ```
 Express/
 ├── src/main/java/me/psikuvit/express/
-│   ├── controller/      # REST endpoints (5 controllers)
+│   ├── controller/      # REST endpoints (6 controllers)
 │   ├── service/         # Business logic
 │   ├── repository/      # Data access
 │   ├── model/          # JPA entities
@@ -193,6 +200,8 @@ Express/
 │   └── config/         # App configuration
 ├── API_DOCUMENTATION.md
 ├── QUICK_START.md
+├── IMPLEMENTATION_SUMMARY.md
+├── API_ENDPOINTS.md
 └── Express_Delivery_API.postman_collection.json
 ```
 
@@ -200,33 +209,45 @@ Express/
 
 ### 1. Authentication System
 - Complete user registration and login
-- JWT-based authentication
+- JWT-based authentication with role-based access control
 - Refresh token mechanism
-- Secure password hashing
+- Secure password hashing with BCrypt
+- Support for ROLE_USER and ROLE_DELIVERY
 
-### 2. Smart Checkout
-- Validates product availability
-- Finds nearest delivery guy automatically
-- Calculates distance using Haversine formula
-- Creates order with complete tracking
+### 2. Delivery Guy Management ⭐ NEW
+- User registration as delivery personnel
+- Age verification (minimum 18 years)
+- Vehicle and WhatsApp information tracking
+- Availability status management
+- Order claim workflow
+- Automatic ROLE_DELIVERY assignment
 
-### 3. Dynamic Pricing
+### 3. Smart Order Processing
+- Order creation with PENDING status
+- Queue-based order assignment
+- Delivery guys claim orders from available pool
+- WhatsApp notifications on order acceptance
+- Order status tracking (PENDING → ASSIGNED → IN_PROGRESS → DELIVERED)
+
+### 4. Dynamic Pricing
 - Base product price
 - Size-based fees (Small: $1, Medium: $2.5, Big: $5)
 - Distance-based delivery fee ($0.50/km)
 - Detailed price breakdown
+- Real-time price calculation
 
-### 4. Delivery Management
+### 5. Delivery Management
 - Real-time delivery guy locations
 - Availability tracking
 - Distance-based sorting
-- Automatic assignment
+- Order assignment workflow
+- Distance calculation from delivery guy to customer
 
-### 5. Location Services
+### 6. Location Services
 - Mobile app location updates
 - GPS coordinate storage
 - Address management
-- Distance calculations
+- Haversine distance calculations
 
 ## 🚢 Production Deployment
 
@@ -249,7 +270,9 @@ Feel free to submit issues and enhancement requests!
 For detailed documentation, check out the following files:
 - [QUICK_START.md](QUICK_START.md) - Get started quickly
 - [API_DOCUMENTATION.md](API_DOCUMENTATION.md) - Complete API reference
+- [API_ENDPOINTS.md](API_ENDPOINTS.md) - Detailed endpoint guide
 - [IMPLEMENTATION_SUMMARY.md](IMPLEMENTATION_SUMMARY.md) - Technical details
+- [ENVIRONMENT_SETUP.md](ENVIRONMENT_SETUP.md) - Configuration and deployment
 
 ---
 
