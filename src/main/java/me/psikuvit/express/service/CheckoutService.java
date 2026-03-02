@@ -41,29 +41,19 @@ public class CheckoutService {
         // Validate and check products
         List<CheckedOrderItem> checkedItems = validateProducts(request.getProducts());
 
-        // Find nearest delivery guy
-        DeliveryGuy nearestDeliveryGuy = findNearestDeliveryGuy(request.getDeliveryLocation());
-        if (nearestDeliveryGuy == null) {
-            throw new RuntimeException("No available delivery guys at the moment");
-        }
-
-        // Calculate distance
-        double distance = distanceService.calculateDistance(
-                nearestDeliveryGuy.getLocation(),
-                request.getDeliveryLocation()
-        );
+        // Calculate estimated distance from user location
+        double distance = 0;
 
         // Calculate total price
         double totalPrice = calculateTotalPrice(checkedItems, distance);
 
-        // Create order
+        // Create order as PENDING — delivery guys will pick it up
         Order order = new Order();
         order.setUser(user);
-        order.setDeliveryGuy(nearestDeliveryGuy);
         order.setDeliveryLocation(request.getDeliveryLocation());
         order.setDistance(distance);
         order.setTotalPrice(totalPrice);
-        order.setStatus(Order.OrderStatus.ASSIGNED);
+        order.setStatus(Order.OrderStatus.PENDING);
 
         // Create order items
         List<OrderItem> orderItems = new ArrayList<>();
@@ -83,36 +73,13 @@ public class CheckoutService {
         // Save order
         order = orderRepository.save(order);
 
-        // Mark delivery guy as unavailable
-        nearestDeliveryGuy.setAvailable(false);
-        deliveryGuyRepository.save(nearestDeliveryGuy);
-
-        // Send WhatsApp notification to delivery guy
-        whatsAppService.sendOrderToDeliveryGuy(
-                nearestDeliveryGuy,
-                order,
-                checkedItems,
-                request.getDeliveryLocation()
-        );
-
-        DeliveryGuyResponse deliveryGuyResponse = new DeliveryGuyResponse(
-                nearestDeliveryGuy.getId(),
-                nearestDeliveryGuy.getName(),
-                nearestDeliveryGuy.getAge(),
-                nearestDeliveryGuy.getCar(),
-                nearestDeliveryGuy.getWhatsappNumber(),
-                nearestDeliveryGuy.getLocation(),
-                nearestDeliveryGuy.getAvailable(),
-                distance
-        );
-
         return new CheckoutResponse(
                 order.getId(),
-                "Order created successfully and assigned to delivery guy",
+                "Order placed! A delivery driver will accept it shortly.",
                 checkedItems,
                 totalPrice,
                 distance,
-                deliveryGuyResponse
+                null
         );
     }
 
