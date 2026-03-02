@@ -32,5 +32,9 @@ public class DeliveryGuy {
 
     @Column(nullable = false)
     private Boolean available = true;
+
+    @OneToOne
+    @JoinColumn(name = "user_id", unique = true)
+    private User user;
 }
 
