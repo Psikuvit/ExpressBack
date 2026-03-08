@@ -3,12 +3,14 @@ package me.psikuvit.express.service;
 import me.psikuvit.express.dto.DeliveryOrderResponse;
 import me.psikuvit.express.dto.DeliveryProfileResponse;
 import me.psikuvit.express.dto.DeliveryRegistrationRequest;
+import me.psikuvit.express.event.OrderAcceptedEvent;
 import me.psikuvit.express.model.DeliveryGuy;
 import me.psikuvit.express.model.Order;
 import me.psikuvit.express.model.User;
 import me.psikuvit.express.repository.DeliveryGuyRepository;
 import me.psikuvit.express.repository.OrderRepository;
 import me.psikuvit.express.repository.UserRepository;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -21,18 +23,18 @@ public class DeliveryService {
     private final UserRepository userRepository;
     private final DeliveryGuyRepository deliveryGuyRepository;
     private final OrderRepository orderRepository;
-    private final WhatsAppService whatsAppService;
+    private final ApplicationEventPublisher eventPublisher;
     private final DistanceCalculationService distanceService;
 
     public DeliveryService(UserRepository userRepository,
                            DeliveryGuyRepository deliveryGuyRepository,
                            OrderRepository orderRepository,
-                           WhatsAppService whatsAppService,
+                           ApplicationEventPublisher eventPublisher,
                            DistanceCalculationService distanceService) {
         this.userRepository = userRepository;
         this.deliveryGuyRepository = deliveryGuyRepository;
         this.orderRepository = orderRepository;
-        this.whatsAppService = whatsAppService;
+        this.eventPublisher = eventPublisher;
         this.distanceService = distanceService;
     }
 
@@ -71,10 +73,9 @@ public class DeliveryService {
                 .orElse(null);
 
         if (deliveryGuy == null) {
-            DeliveryProfileResponse response = new DeliveryProfileResponse(
+            return new DeliveryProfileResponse(
                     null, user.getUsername(), null, null, null, null, null, false
             );
-            return response;
         }
 
         return toProfileResponse(deliveryGuy);
@@ -150,19 +151,21 @@ public class DeliveryService {
         deliveryGuy.setAvailable(false);
         deliveryGuyRepository.save(deliveryGuy);
 
-        // Send WhatsApp notification
-        try {
-            whatsAppService.sendMessage(
-                    deliveryGuy.getWhatsappNumber(),
-                    String.format("🚀 You accepted Order #%d!\n📍 Deliver to: %s\n💰 Total: $%.2f\n📏 Distance: %.1f km",
-                            order.getId(),
-                            order.getDeliveryLocation().getAddress(),
-                            order.getTotalPrice(),
-                            distance)
-            );
-        } catch (Exception e) {
-            // Don't fail the order if WhatsApp fails
-        }
+        String notificationMessage = String.format(
+                "Order #%d accepted.%nDeliver to: %s%nTotal: $%.2f%nDistance: %.1f km",
+                order.getId(),
+                order.getDeliveryLocation().getAddress(),
+                order.getTotalPrice(),
+                distance
+        );
+
+        // Notification is processed asynchronously after transaction commit.
+        eventPublisher.publishEvent(new OrderAcceptedEvent(
+                order.getId(),
+                deliveryGuy.getName(),
+                deliveryGuy.getWhatsappNumber(),
+                notificationMessage
+        ));
 
         List<DeliveryOrderResponse.OrderItemDetail> items = order.getItems().stream()
                 .map(item -> new DeliveryOrderResponse.OrderItemDetail(
